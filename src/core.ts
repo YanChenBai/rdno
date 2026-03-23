@@ -51,6 +51,8 @@ export async function build({ entry, cwd = process.cwd(), format = 'es' }: Optio
     format,
     file,
     sourcemap: true,
+    codeSplitting: false,
+    minify: false,
   });
 
   return { bundle, file };
