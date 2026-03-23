@@ -1,6 +1,7 @@
 import { spawn, type ChildProcess } from 'child_process';
 import { createHash } from 'crypto';
 import { promises as fs } from 'fs';
+import { isBuiltin } from 'module';
 import path, { isAbsolute, join, relative, resolve } from 'path';
 
 import watcher from '@parcel/watcher';
@@ -44,7 +45,13 @@ export async function build({ entry, cwd = process.cwd(), format = 'es' }: Optio
     tsconfig: true,
     platform: 'node',
     treeshake: false,
-    external: (id) => !id.startsWith('.') && !id.startsWith('/') && !path.isAbsolute(id),
+
+    external: (id) => {
+      return isBuiltin(id) || id.startsWith('node:');
+    },
+    resolve: {
+      symlinks: true,
+    },
   });
 
   await bundle.write({
@@ -66,6 +73,7 @@ export async function run({ entry, cwd = process.cwd(), format = 'es' }: Options
     stdio: 'inherit',
     env: {
       ...process.env,
+      NODE_PATH: `${join(cwd, 'node_modules')}${path.delimiter}${process.env.NODE_PATH || ''}`,
       NODE_OPTIONS: '--enable-source-maps',
     },
   });
