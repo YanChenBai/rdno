@@ -16,11 +16,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set node
-        uses: actions/setup-node@v4
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
         with:
-          node-version: lts/*
+          cache: true
 
-      - run: npx changelogithub
+      - name: Install
+        run: vp install
+
+      - run: vp dlx changelogithub
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
