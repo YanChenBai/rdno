@@ -52,6 +52,12 @@ export const load: LoadHook = async (url, context, nextLoad) => {
     typescript: {},
   });
 
+  if (result.errors.length > 0) {
+    const details = result.errors.map((error) => error.codeframe ?? error.message).join('\n\n');
+
+    throw new Error(details);
+  }
+
   return {
     format: 'module',
     source: result.code,
