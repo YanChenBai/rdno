@@ -9,14 +9,14 @@
     "rdno": "lib/index.mjs"
   },
   "files": [
-    "bin"
+    "lib"
   ],
   "type": "module",
   "exports": {
     ".": "./lib/register.mjs"
   },
   "scripts": {
-    "build": "rolldown -c rolldown.config.ts",
+    "build": "vp pack",
     "typecheck": "tsc --noEmit",
     "fmt": "vp fmt",
     "fmt:check": "vp fmt --check",
