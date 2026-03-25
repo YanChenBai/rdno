@@ -1,87 +1,41 @@
 import { spawn, type ChildProcess } from 'child_process';
-import { createHash } from 'crypto';
 import { promises as fs } from 'fs';
-import { isBuiltin } from 'module';
-import path, { isAbsolute, join, relative, resolve } from 'path';
+import path from 'path';
 
 import watcher from '@parcel/watcher';
-import { rolldown, type ModuleFormat } from 'rolldown';
-
-import { version } from '../package.json';
 
 export interface Options {
   entry: string;
   cwd?: string;
-  format?: ModuleFormat;
 }
 
-export const resolveCacheDir = (cwd: string) => join(cwd, 'node_modules', '.cache', 'rdno');
+export async function run(entry: string) {
+  const cwd = process.cwd();
+  const cwdNodeModules = path.join(cwd, 'node_modules');
+  const cwdNodeModulesExists = await fs
+    .access(cwdNodeModules)
+    .then(() => true)
+    .catch(() => false);
 
-export async function resolveCachePath({ entry, cwd = process.cwd(), format = 'es' }: Options) {
-  const absEntry = isAbsolute(entry) ? entry : resolve(cwd, entry);
-  const relPath = relative(cwd, absEntry);
+  const NODE_PATH = [process.env.NODE_PATH ?? '', cwdNodeModulesExists ? cwdNodeModules : '']
+    .filter(Boolean)
+    .join(path.delimiter);
 
-  const mtime = await fs.stat(absEntry).then(
-    (stat) => stat.mtimeMs,
-    () => 0,
-  );
-
-  const metaString = `${relPath}:${format}:${version}:${mtime}`;
-  const hash = createHash('md5').update(metaString).digest('hex');
-
-  const ext = path.extname(relPath);
-  const flatName = relPath.replace(ext, '').replace(/[\\/]/g, '_');
-
-  const cacheName = `${flatName}_${ext.replace('.', '')}_${hash}.js`;
-
-  return join(resolveCacheDir(cwd), cacheName);
-}
-
-export async function build({ entry, cwd = process.cwd(), format = 'es' }: Options) {
-  const file = await resolveCachePath({ entry, cwd, format });
-
-  const bundle = await rolldown({
-    input: entry,
-    tsconfig: true,
-    platform: 'node',
-    treeshake: false,
-
-    external: (id) => {
-      return isBuiltin(id) || id.startsWith('node:');
-    },
-    resolve: {
-      symlinks: true,
-    },
-  });
-
-  await bundle.write({
-    format,
-    file,
-    sourcemap: true,
-    codeSplitting: false,
-    minify: false,
-  });
-
-  return { bundle, file };
-}
-
-export async function run({ entry, cwd = process.cwd(), format = 'es' }: Options) {
-  const { file } = await build({ entry, cwd, format });
-
-  return spawn('node', [file], {
+  return spawn('node', ['--import', new URL('./register.mjs', import.meta.url).href, entry], {
     cwd,
     stdio: 'inherit',
     env: {
       ...process.env,
-      NODE_PATH: `${join(cwd, 'node_modules')}${path.delimiter}${process.env.NODE_PATH || ''}`,
+      NODE_PATH,
       NODE_OPTIONS: '--enable-source-maps',
     },
   });
 }
 
-export async function watch({ entry, cwd = process.cwd(), format = 'es' }: Options) {
+export async function watch(entry: string) {
+  const cwd = process.cwd();
   let child: ChildProcess | null = null;
-  const start = () => run({ entry, cwd, format });
+  const start = () => run(entry);
 
   child = await start();
 

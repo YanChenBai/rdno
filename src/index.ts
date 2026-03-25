@@ -1,9 +1,7 @@
 #!/usr/bin/env node
-import { promises as fs } from 'fs';
-
 import { cac } from 'cac';
 
-import { resolveCacheDir, run, watch } from './core';
+import { run, watch } from './core';
 
 const cli = cac('rdno');
 
@@ -11,16 +9,13 @@ cli
   .command('<file>', 'Run a TS file')
   .option('-w, --watch', 'Watch mode')
   .option('--format <format>', 'Bundle format', { default: 'es' })
-  .action(async (file, options) => {
-    const cwd = process.cwd();
-    await fs.mkdir(resolveCacheDir(cwd), { recursive: true });
-
+  .action(async (entry, options) => {
     if (options.watch) {
-      await watch({ entry: file, format: options.format, cwd });
+      await watch(entry);
       return;
     }
 
-    const child = await run({ entry: file, format: options.format, cwd });
+    const child = await run(entry);
 
     child.on('exit', (code) => process.exit(code ?? 0));
   });

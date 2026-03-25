@@ -6,9 +6,13 @@ export default defineConfig({
   pack: {
     tsconfig: true,
     platform: 'node',
-    entry: 'src/index.ts',
+    entry: {
+      index: 'src/index.ts',
+      hooks: 'src/hooks.ts',
+      register: 'src/register.ts',
+    },
     treeshake: false,
-    outDir: 'bin',
+    outDir: 'lib',
     format: 'esm',
     external: (id) => !id.startsWith('.') && !id.startsWith('/') && !path.isAbsolute(id),
   },
