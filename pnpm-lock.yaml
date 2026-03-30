@@ -21,6 +21,9 @@ importers:
       arg:
         specifier: ^5.0.2
         version: 5.0.2
+      defu:
+        specifier: ^6.1.4
+        version: 6.1.4
       oxc-resolver:
         specifier: ^11.19.1
         version: 11.19.1

@@ -4,7 +4,7 @@
   "description": "",
   "keywords": [],
   "license": "ISC",
-  "author": "",
+  "author": "BaiYanchen",
   "bin": {
     "rdno": "lib/index.mjs"
   },
@@ -13,7 +13,11 @@
   ],
   "type": "module",
   "exports": {
-    ".": "./lib/register.mjs"
+    ".": "./lib/index.mjs",
+    "./config": "./lib/config.mjs",
+    "./hooks": "./lib/hooks.mjs",
+    "./register": "./lib/register.mjs",
+    "./package.json": "./package.json"
   },
   "scripts": {
     "build": "vp pack",
@@ -31,6 +35,7 @@
     "@oxc-project/runtime": "^0.122.0",
     "@parcel/watcher": "^2.5.6",
     "arg": "^5.0.2",
+    "defu": "^6.1.4",
     "oxc-resolver": "^11.19.1",
     "oxc-transform": "^0.121.0"
   },

@@ -1,5 +1,5 @@
 {
-  "cSpell.words": ["bumpp", "Napi", "RDNO", "Rndo", "voidzero", "yocto"],
+  "cSpell.words": ["bumpp", "changelogithub", "defu", "Napi", "RDNO", "Rndo", "voidzero", "yocto"],
   "editor.defaultFormatter": "oxc.oxc-vscode",
   "oxc.fmt.configPath": "./vite.config.ts",
   "editor.formatOnSave": true,

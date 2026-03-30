@@ -3,22 +3,58 @@ import { isBuiltin, type ResolveHook, type LoadHook } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { ResolverFactory } from 'oxc-resolver';
-import { transformSync } from 'oxc-transform';
+import { ResolverFactory, type NapiResolveOptions } from 'oxc-resolver';
+import { transformSync, type TransformOptions } from 'oxc-transform';
 
+import { loadConfig, overwriteMerge } from './load-config';
+
+const userConfig = await loadConfig();
 const isDev = process.env.NODE_ENV !== 'production';
-const SOURCEMAP_PREFIX = '\n//# sourceMappingURL=';
-const SOURCEMAP_MIME = 'data:application/json;charset=utf-8;base64,';
 
-const resolver = new ResolverFactory({
-  extensions: ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.mts', 'cjs', 'cts', '.es6', 'es'],
+const defaultTransformOptions = {
+  sourcemap: true,
+  sourceType: 'module',
+  target: 'esnext',
+  typescript: {
+    onlyRemoveTypeImports: true,
+    rewriteImportExtensions: true,
+  },
+  jsx: {
+    runtime: 'automatic',
+    importSource: 'react',
+    development: isDev,
+    pure: true,
+  },
+  decorator: {
+    legacy: true,
+    emitDecoratorMetadata: true,
+  },
+  define: {
+    'process.env.NODE_ENV': isDev ? '"development"' : '"production"',
+    __DEV__: String(isDev),
+    __PROD__: String(!isDev),
+  },
+} satisfies TransformOptions;
+
+const defaultResolverOptions = {
+  tsconfig: 'auto',
+  extensions: ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.mts', 'cjs', '.cts', '.es6', 'es'],
   conditionNames: ['import', 'node', 'development', 'dev'],
   mainFields: ['source', 'module', 'main'],
   exportsFields: ['exports'],
   modules: ['node_modules'],
   symlinks: true,
-  tsconfig: 'auto',
-});
+} satisfies NapiResolveOptions;
+
+const config = overwriteMerge(
+  { transform: defaultTransformOptions, resolver: defaultResolverOptions },
+  userConfig,
+);
+
+const SOURCEMAP_PREFIX = '\n//# sourceMappingURL=';
+const SOURCEMAP_MIME = 'data:application/json;charset=utf-8;base64,';
+
+const resolver = new ResolverFactory(config.resolver);
 
 export const resolve: ResolveHook = (specifier, context, nextResolve) => {
   const { parentURL } = context;
@@ -51,30 +87,7 @@ export const load: LoadHook = (url, context, nextLoad) => {
 
   const source = readFileSync(filePath, 'utf8');
 
-  const result = transformSync(filePath, source, {
-    sourcemap: true,
-    sourceType: 'module',
-    target: 'esnext',
-    typescript: {
-      onlyRemoveTypeImports: true,
-      rewriteImportExtensions: true,
-    },
-    jsx: {
-      runtime: 'automatic',
-      importSource: 'react',
-      development: isDev,
-      pure: true,
-    },
-    decorator: {
-      legacy: true,
-      emitDecoratorMetadata: true,
-    },
-    define: {
-      'process.env.NODE_ENV': isDev ? '"development"' : '"production"',
-      __DEV__: String(isDev),
-      __PROD__: String(!isDev),
-    },
-  });
+  const result = transformSync(filePath, source, config.transform);
 
   if (result.errors.length > 0) {
     const details = result.errors.map((error) => error.codeframe ?? error.message).join('\n\n');
