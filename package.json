@@ -1,6 +1,6 @@
 {
   "name": "@byc/rdno",
-  "version": "0.0.1-beta.4",
+  "version": "0.0.1-beta.5",
   "description": "",
   "keywords": [],
   "license": "ISC",
@@ -17,24 +17,25 @@
   },
   "scripts": {
     "build": "vp pack",
-    "typecheck": "tsc --noEmit",
     "fmt": "vp fmt",
     "fmt:check": "vp fmt --check",
     "lint": "vp lint",
     "lint:fix": "vp lint --fix",
-    "release:prepare": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "check": "vp check",
+    "release:prepare": "vp check && pnpm test && pnpm build",
     "release": "pnpm release:prepare && bumpp && pnpm publish",
     "test": "vp test run",
     "prepare": "vp config"
   },
   "dependencies": {
+    "@oxc-project/runtime": "^0.122.0",
     "@parcel/watcher": "^2.5.6",
-    "cac": "^7.0.0",
+    "arg": "^5.0.2",
     "oxc-resolver": "^11.19.1",
     "oxc-transform": "^0.121.0"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0",
+    "@types/node": "^24.1.0",
     "bumpp": "^11.0.1",
     "typescript": "^5.9.3",
     "vite-plus": "latest",

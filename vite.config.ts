@@ -1,5 +1,3 @@
-import path from 'node:path';
-
 import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
@@ -14,7 +12,9 @@ export default defineConfig({
     treeshake: false,
     outDir: 'lib',
     format: 'esm',
-    external: (id) => !id.startsWith('.') && !id.startsWith('/') && !path.isAbsolute(id),
+    deps: {
+      neverBundle: ['c12', 'oxc-resolver', 'oxc-transform', '@parcel/watcher'],
+    },
   },
   staged: {
     '*': 'vp check --fix',

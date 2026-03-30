@@ -1,4 +1,4 @@
-name: Unit Test
+name: CI
 
 on:
   push:
@@ -9,6 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -17,6 +18,7 @@ jobs:
         uses: voidzero-dev/setup-vp@v1
         with:
           cache: true
+          node-version: 24
 
       - name: Install
         run: vp install
@@ -25,7 +27,4 @@ jobs:
         run: vp check
 
       - name: Test
-        run: vp test run
-
-      - name: Build
-        run: vp build
+        run: vp test

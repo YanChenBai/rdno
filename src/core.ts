@@ -9,7 +9,7 @@ export interface Options {
   cwd?: string;
 }
 
-export async function run(entry: string) {
+export async function run(entry: string, extraArgs: string[] = []) {
   const cwd = process.cwd();
   const cwdNodeModules = path.join(cwd, 'node_modules');
   const cwdNodeModulesExists = await fs
@@ -21,21 +21,30 @@ export async function run(entry: string) {
     .filter(Boolean)
     .join(path.delimiter);
 
-  return spawn('node', ['--import', new URL('./register.mjs', import.meta.url).href, entry], {
-    cwd,
-    stdio: 'inherit',
-    env: {
-      ...process.env,
-      NODE_PATH,
-      NODE_OPTIONS: '--enable-source-maps',
+  return spawn(
+    'node',
+    [
+      '--enable-source-maps',
+      '--import',
+      new URL('./register.mjs', import.meta.url).href,
+      entry,
+      ...extraArgs,
+    ],
+    {
+      cwd,
+      stdio: `inherit`,
+      env: {
+        ...process.env,
+        NODE_PATH,
+      },
     },
-  });
+  );
 }
 
-export async function watch(entry: string) {
+export async function watchRun(entry: string, extraArgs: string[] = []) {
   const cwd = process.cwd();
   let child: ChildProcess | null = null;
-  const start = () => run(entry);
+  const start = () => run(entry, extraArgs);
 
   child = await start();
 

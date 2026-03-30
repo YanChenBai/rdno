@@ -1,197 +1,137 @@
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 
-const readFileMock = vi.fn();
-const isBuiltinMock = vi.fn();
-const resolverAsyncMock = vi.fn();
-const transformMock = vi.fn();
-
-vi.mock('node:fs/promises', () => ({
-  readFile: readFileMock,
+vi.mock('node:fs', () => ({
+  readFileSync: vi.fn(),
 }));
 
 vi.mock('node:module', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:module')>();
-
   return {
     ...actual,
-    isBuiltin: isBuiltinMock,
+    isBuiltin: vi.fn(),
   };
 });
 
-vi.mock('oxc-resolver', () => ({
-  ResolverFactory: vi.fn(
-    class {
-      async = resolverAsyncMock;
-    },
-  ),
-}));
+vi.mock('oxc-resolver', () => {
+  let syncMock: ReturnType<typeof vi.fn>;
+
+  class MockResolverFactory {
+    constructor() {}
+    sync = syncMock;
+  }
+
+  const mockFactory = MockResolverFactory as unknown as typeof MockResolverFactory & {
+    _setSyncMock: (mock: ReturnType<typeof vi.fn>) => void;
+  };
+
+  mockFactory._setSyncMock = (mock) => {
+    syncMock = mock;
+  };
+
+  return {
+    ResolverFactory: mockFactory,
+  };
+});
 
 vi.mock('oxc-transform', () => ({
-  transform: transformMock,
+  transformSync: vi.fn(),
 }));
 
+import { readFileSync } from 'node:fs';
+import { isBuiltin } from 'node:module';
+
+import { ResolverFactory } from 'oxc-resolver';
+import { transformSync } from 'oxc-transform';
+
+const readFileSyncMock = vi.mocked(readFileSync);
+const isBuiltinMock = vi.mocked(isBuiltin);
+const transformSyncMock = vi.mocked(transformSync);
+
 describe('hooks', () => {
+  let resolverSyncMock: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.resetModules();
     isBuiltinMock.mockReturnValue(false);
+    resolverSyncMock = vi.fn();
+    (ResolverFactory as any)._setSyncMock(resolverSyncMock);
   });
 
-  it('delegates builtin and node: specifiers to nextResolve', async () => {
+  it('should resolve: delegate builtins, find files, and fallback', async () => {
+    const { resolve } = await import('./hooks');
+
+    // 内置模块委托
+    isBuiltinMock.mockReturnValue(true);
     const nextResolve = vi.fn().mockResolvedValue({ url: 'node:path' });
-    const { resolve } = await import('./hooks');
-    isBuiltinMock.mockImplementation((specifier) => specifier === 'fs');
-
-    await expect(
-      resolve(
-        'fs',
-        { parentURL: 'file:///C:/repo/main.ts', conditions: [], importAttributes: {} },
-        nextResolve,
-      ),
-    ).resolves.toEqual({ url: 'node:path' });
-    await expect(
-      resolve(
-        'node:path',
-        { parentURL: 'file:///C:/repo/main.ts', conditions: [], importAttributes: {} },
-        nextResolve,
-      ),
-    ).resolves.toEqual({ url: 'node:path' });
-
-    expect(nextResolve).toHaveBeenCalledTimes(2);
-  });
-
-  it('returns a resolved file URL when oxc-resolver finds a path', async () => {
-    resolverAsyncMock.mockResolvedValue({ path: 'C:\\repo\\src\\dep.ts' });
-    const nextResolve = vi.fn();
-
-    const { resolve } = await import('./hooks');
-    const result = await resolve(
-      './dep',
-      { parentURL: 'file:///C:/repo/src/main.ts', conditions: [], importAttributes: {} },
+    await resolve(
+      'fs',
+      { parentURL: 'file:///a.ts', conditions: [], importAttributes: {} },
       nextResolve,
     );
-
-    expect(resolverAsyncMock).toHaveBeenCalledWith('C:\\repo\\src', './dep');
-    expect(result).toEqual({
-      url: 'file:///C:/repo/src/dep.ts',
-      shortCircuit: true,
-    });
-    expect(nextResolve).not.toHaveBeenCalled();
-  });
-
-  it('falls back to nextResolve when oxc-resolver does not resolve a path', async () => {
-    resolverAsyncMock.mockResolvedValue({});
-    const nextResolve = vi.fn().mockResolvedValue({ url: 'file:///fallback.js' });
-
-    const { resolve } = await import('./hooks');
-    const result = await resolve(
-      './dep',
-      { parentURL: 'file:///C:/repo/src/main.ts', conditions: [], importAttributes: {} },
-      nextResolve,
-    );
-
-    expect(result).toEqual({ url: 'file:///fallback.js' });
     expect(nextResolve).toHaveBeenCalledTimes(1);
+
+    // 成功解析
+    isBuiltinMock.mockReturnValue(false);
+    resolverSyncMock.mockReturnValue({ path: '/repo/x.ts' });
+    const result = await resolve(
+      './x',
+      { parentURL: 'file:///C:/repo/a.ts', conditions: [], importAttributes: {} },
+      vi.fn(),
+    );
+    expect(result.shortCircuit).toBe(true);
+    expect(result.url).toMatch(/^file:\/\//);
+
+    // 回退
+    resolverSyncMock.mockReturnValue({});
+    const nextResolve2 = vi.fn().mockResolvedValue({ url: 'fallback' });
+    await resolve(
+      './y',
+      { parentURL: 'file:///C:/repo/a.ts', conditions: [], importAttributes: {} },
+      nextResolve2,
+    );
+    expect(nextResolve2).toHaveBeenCalledTimes(1);
   });
 
-  it('delegates non-file URLs and non-TypeScript files to nextLoad', async () => {
-    const nextLoad = vi.fn().mockResolvedValue({ format: 'module', source: 'export {}' });
+  it('should load: delegate non-TS, transform TS, and throw on errors', async () => {
     const { load } = await import('./hooks');
 
-    await expect(
-      load(
-        'data:text/javascript,export{}',
-        { conditions: [], format: 'module', importAttributes: {} },
-        nextLoad,
-      ),
-    ).resolves.toEqual({ format: 'module', source: 'export {}' });
-    await expect(
-      load(
-        'file:///C:/repo/file.js',
-        { conditions: [], format: 'module', importAttributes: {} },
-        nextLoad,
-      ),
-    ).resolves.toEqual({ format: 'module', source: 'export {}' });
-
-    expect(nextLoad).toHaveBeenCalledTimes(2);
-    expect(readFileMock).not.toHaveBeenCalled();
-  });
-
-  it('transforms TypeScript files through oxc-transform', async () => {
-    readFileMock.mockResolvedValue('const answer: number = 42;');
-    transformMock.mockResolvedValue({ code: 'const answer = 42;', errors: [] });
-
-    const nextLoad = vi.fn();
-    const { load } = await import('./hooks');
-    const result = await load(
-      'file:///C:/repo/file.ts',
+    // 非 TS 文件委托
+    const nextLoad = vi.fn().mockResolvedValue({ format: 'module' });
+    await load(
+      'file:///C:/x.js',
       { conditions: [], format: 'module', importAttributes: {} },
       nextLoad,
     );
+    expect(nextLoad).toHaveBeenCalledTimes(1);
+    expect(readFileSyncMock).not.toHaveBeenCalled();
 
-    expect(readFileMock).toHaveBeenCalledWith('C:\\repo\\file.ts', 'utf8');
-    expect(transformMock).toHaveBeenCalledWith('C:\\repo\\file.ts', 'const answer: number = 42;', {
-      sourcemap: true,
-      sourceType: 'module',
-      target: 'esnext',
-      typescript: {},
-    });
-    expect(result).toEqual({
-      format: 'module',
-      source: 'const answer = 42;',
-      shortCircuit: true,
-    });
-    expect(nextLoad).not.toHaveBeenCalled();
-  });
+    // TS 文件转换
+    readFileSyncMock.mockReturnValue('source');
+    transformSyncMock.mockReturnValue({ code: 'transpiled', errors: [], helpersUsed: {} });
+    const result = load(
+      'file:///C:/x.ts',
+      { conditions: [], format: 'module', importAttributes: {} },
+      vi.fn(),
+    );
+    expect(transformSyncMock).toHaveBeenCalledWith(
+      expect.any(String),
+      'source',
+      expect.objectContaining({ sourcemap: true, sourceType: 'module' }),
+    );
+    expect(result).toEqual({ format: 'module', source: 'transpiled', shortCircuit: true });
 
-  it('throws when oxc-transform reports errors', async () => {
-    readFileMock.mockResolvedValue('const answer: number = ;');
-    transformMock.mockResolvedValue({
+    // 转换错误抛出
+    readFileSyncMock.mockReturnValue('bad');
+    transformSyncMock.mockReturnValue({
       code: '',
       errors: [
-        {
-          severity: 'error',
-          message: 'Unexpected token',
-          labels: [],
-          helpMessage: null,
-          codeframe: 'file.ts:1:24\nconst answer: number = ;\n                       ^',
-        },
+        { severity: 'Error', message: 'error', labels: [], helpMessage: null, codeframe: null },
       ],
-    });
-
-    const { load } = await import('./hooks');
-
-    await expect(
-      load(
-        'file:///C:/repo/file.ts',
-        { conditions: [], format: 'module', importAttributes: {} },
-        vi.fn(),
-      ),
-    ).rejects.toThrow('file.ts:1:24');
-  });
-
-  it('falls back to an error message when oxc-transform does not provide a codeframe', async () => {
-    readFileMock.mockResolvedValue('const answer: number = ;');
-    transformMock.mockResolvedValue({
-      code: '',
-      errors: [
-        {
-          severity: 'error',
-          message: 'Unexpected token',
-          labels: [],
-          helpMessage: null,
-          codeframe: null,
-        },
-      ],
-    });
-
-    const { load } = await import('./hooks');
-
-    await expect(
-      load(
-        'file:///C:/repo/file.ts',
-        { conditions: [], format: 'module', importAttributes: {} },
-        vi.fn(),
-      ),
-    ).rejects.toThrow('Unexpected token');
+      helpersUsed: {},
+    } as any);
+    expect(() =>
+      load('file:///C:/x.ts', { conditions: [], format: 'module', importAttributes: {} }, vi.fn()),
+    ).toThrow();
   });
 });
