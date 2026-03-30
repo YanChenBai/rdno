@@ -20,8 +20,6 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - name: Setup Vite+
         uses: voidzero-dev/setup-vp@v1
@@ -40,24 +38,24 @@ jobs:
       - name: Build
         run: vp pack
 
-      - name: Extract npm tag from version
-        id: npm_tag
-        run: |
-          TAG="latest"
-          if echo "${{ github.ref_name }}" | grep -E "(beta|rc|alpha|canary)"; then
-            TAG="beta"
-          fi
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
+      # - name: Extract npm tag from version
+      #   id: npm_tag
+      #   run: |
+      #     TAG="latest"
+      #     if echo "${{ github.ref_name }}" | grep -E "(beta|rc|alpha|canary)"; then
+      #       TAG="beta"
+      #     fi
+      #     echo "tag=$TAG" >> $GITHUB_OUTPUT
 
-      - name: Setup Node.js for npm publish
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          registry-url: 'https://registry.npmjs.org/'
+      # - name: Setup Node.js for npm publish
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: 24
+      #     registry-url: 'https://registry.npmjs.org/'
 
-      - run: pnpm publish --provenance --access public --no-git-checks --tag ${{ steps.npm_tag.outputs.tag }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # - run: pnpm publish --provenance --access public --no-git-checks --tag ${{ steps.npm_tag.outputs.tag }}
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Release (Changelog)
         run: vp dlx changelogithub
