@@ -25,8 +25,6 @@ export interface RdnoConfig {
    *    },
    *    define: {
    *        'process.env.NODE_ENV':  process.env.NODE_ENV !== 'production' ? '"development"' : '"production"',
-   *        __DEV__: String(process.env.NODE_ENV !== 'production'),
-   *        __PROD__: String(process.env.NODE_ENV === 'production'),
    *    },
    * }
    */
@@ -48,6 +46,6 @@ export interface RdnoConfig {
   resolver?: NapiResolveOptions;
 }
 
-export function defineConfig<const T extends RdnoConfig>(config: T) {
+export function defineConfig(config: RdnoConfig) {
   return config;
 }

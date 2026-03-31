@@ -59,7 +59,7 @@ describe('hooks', () => {
   });
 
   it('should resolve: delegate builtins, find files, and fallback', async () => {
-    const { resolve } = await import('./hooks');
+    const { resolve } = await import('../src/hooks');
 
     // 内置模块委托
     isBuiltinMock.mockReturnValue(true);
@@ -94,7 +94,7 @@ describe('hooks', () => {
   });
 
   it('should load: delegate non-TS, transform TS, and throw on errors', async () => {
-    const { load } = await import('./hooks');
+    const { load } = await import('../src/hooks');
 
     // 非 TS 文件委托
     const nextLoad = vi.fn().mockResolvedValue({ format: 'module' });

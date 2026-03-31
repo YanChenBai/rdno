@@ -6,8 +6,10 @@ import arg from 'arg';
 
 import pakJson from '../package.json' with { type: 'json' };
 import { run, watchRun } from './core';
+import { loadConfigJson } from './load-config';
 
 const CLI_NAME = 'RDNO';
+const configJson = loadConfigJson();
 
 const args = arg(
   {
@@ -54,9 +56,17 @@ access(entryPath).catch(() => {
 });
 
 if (args['--watch']) {
-  await watchRun(entryPath, extraArgs);
+  await watchRun({
+    entry: entryPath,
+    extraArgs,
+    configJson,
+  });
 } else {
-  await run(entryPath, extraArgs);
+  await run({
+    entry: entryPath,
+    extraArgs,
+    configJson,
+  });
 }
 
 process.on('SIGINT', () => process.exit(0));

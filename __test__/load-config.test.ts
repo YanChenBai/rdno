@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test';
 
-import type { RdnoConfig } from './config';
-import { overwriteMerge } from './load-config';
+import type { RdnoConfig } from '../src/config';
+import { overwriteMerge } from '../src/load-config';
 
 describe('load-config: overwriteMerge', () => {
   it('应该深度合并对象', () => {
@@ -27,7 +27,7 @@ describe('load-config: overwriteMerge', () => {
     };
 
     // defu 会修改第一个对象并返回它
-    const result = overwriteMerge({ ...defaults }, userConfig);
+    const result = overwriteMerge(userConfig, { ...defaults });
 
     expect(result).toEqual({
       transform: {
@@ -57,7 +57,7 @@ describe('load-config: overwriteMerge', () => {
     };
 
     // defu 会修改第一个对象并返回它
-    const result = overwriteMerge({ ...defaults }, userConfig);
+    const result = overwriteMerge(userConfig, { ...defaults });
 
     expect(result.resolver.extensions).toEqual(['.mts', '.mjs']);
     expect(result.resolver.conditionNames).toEqual(['import', 'node']);
@@ -71,7 +71,7 @@ describe('load-config: overwriteMerge', () => {
 
     const userConfig: RdnoConfig = {};
 
-    const result = overwriteMerge(defaults, userConfig);
+    const result = overwriteMerge(userConfig, { ...defaults });
 
     expect(result).toEqual(defaults);
   });
@@ -88,7 +88,7 @@ describe('load-config: overwriteMerge', () => {
       transform: {},
     };
 
-    const result = overwriteMerge(defaults, userConfig);
+    const result = overwriteMerge(userConfig, { ...defaults });
 
     expect(result.transform).toEqual({
       sourcemap: true,
@@ -112,7 +112,7 @@ describe('load-config: overwriteMerge', () => {
       },
     };
 
-    const result = overwriteMerge(defaults, userConfig);
+    const result = overwriteMerge(userConfig, { ...defaults });
 
     expect(result).toEqual({
       transform: {
@@ -139,7 +139,7 @@ describe('load-config: overwriteMerge', () => {
       },
     };
 
-    const result = overwriteMerge(defaults, userConfig);
+    const result = overwriteMerge(userConfig, { ...defaults });
 
     // defu 默认行为会保留 undefined
     expect(result.transform.sourcemap).toBe(true);

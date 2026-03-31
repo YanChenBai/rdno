@@ -4,12 +4,14 @@ import path from 'path';
 
 import watcher from '@parcel/watcher';
 
-export interface Options {
+export interface RunOptions {
   entry: string;
-  cwd?: string;
+  extraArgs?: string[];
+  configJson?: string;
 }
 
-export async function run(entry: string, extraArgs: string[] = []) {
+export async function run(options: RunOptions) {
+  const { entry, extraArgs = [], configJson } = options;
   const cwd = process.cwd();
   const cwdNodeModules = path.join(cwd, 'node_modules');
   const cwdNodeModulesExists = await fs
@@ -36,15 +38,16 @@ export async function run(entry: string, extraArgs: string[] = []) {
       env: {
         ...process.env,
         NODE_PATH,
+        RDNO_CONFIG: configJson,
       },
     },
   );
 }
 
-export async function watchRun(entry: string, extraArgs: string[] = []) {
+export async function watchRun(options: RunOptions) {
   const cwd = process.cwd();
   let child: ChildProcess | null = null;
-  const start = () => run(entry, extraArgs);
+  const start = () => run(options);
 
   child = await start();
 
