@@ -8,7 +8,7 @@ import { createDefu } from 'defu';
 
 import type { RdnoConfig } from './config';
 
-const CONFIG_FILE_EXTS = ['.js', '.ts', '.mjs', '.mts', '.cjs', '.cts'];
+const CONFIG_FILE_EXTS = ['.js', '.ts', '.mjs', '.mts'];
 const CONFIG_FILES = CONFIG_FILE_EXTS.map((ext) => `rdno.config${ext}`);
 
 const ROOT_PATTERN = /^node_modules$/;

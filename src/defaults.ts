@@ -33,7 +33,7 @@ export const DefaultTransformOptions = {
  */
 export const DefaultResolverOptions = {
   tsconfig: 'auto',
-  extensions: ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.mts', 'cjs', '.cts', '.es6', 'es'],
+  extensions: ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.mts', '.es6', 'es'],
   conditionNames: ['import', 'node', 'development', 'dev'],
   mainFields: ['source', 'module', 'main'],
   exportsFields: ['exports'],

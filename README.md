@@ -52,7 +52,7 @@ export default defineConfig({
 
 支持的配置文件格式：
 
-- `rdno.config.{ts,js,mjs,mts,cjs,cts}`
+- `rdno.config.{ts,js,mjs,mts}`
 
 ### 配置选项
 
@@ -95,7 +95,7 @@ export default defineConfig({
 ```ts
 {
   tsconfig: 'auto',
-  extensions: ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.mts', '.cjs', '.cts', '.es6', 'es'],
+  extensions: ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.mts', '.es6', 'es'],
   conditionNames: ['import', 'node', 'development', 'dev'],
   mainFields: ['source', 'module', 'main'],
   exportsFields: ['exports'],
@@ -111,3 +111,8 @@ export default defineConfig({
 - **Source Maps**：完整调试支持
 - **监听模式**：文件变化自动重启
 - **可配置**：支持自定义转译和解析选项
+
+## 限制
+
+- **仅支持 ESM**：目前仅支持 ES Modules (ESM)，不支持 CommonJS (CJS)
+- **Node.js 版本**：建议使用 Node.js 18.19.0 或更高版本
